@@ -1,0 +1,13 @@
+{
+    "choices" :[
+        {
+            "message" :{
+                "function_call":{
+                    "name": "resume",
+                    "arguments": "[teste]"
+                }
+            }
+        }
+    ]
+}
+

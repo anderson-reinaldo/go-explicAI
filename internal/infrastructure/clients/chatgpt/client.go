@@ -98,20 +98,20 @@ func NewClient(serviceName, URL, apiKey, model string, timeout int64) *Client {
 	}
 }
 
-func (c *Client) resume(ctx context.Context, transcription string) (*summarize.ResumeOutput, error) {
+func (c *Client) Resume(ctx context.Context, transcription string) (*summarize.ResumeOutput, error) {
 	req := c.HttpClient.Client.
 		SetHeader("Authorization", "Bearer "+c.ApiKey).
-		SetHeader("Content-Type", "aaplication/json").
+		SetHeader("Content-Type", "application/json").
 		SetBody(c.buildResumeRequest(transcription))
 
 	res, err := req.Post(basePath)
 
-	if res.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("error on chatgpt resume request: response=%s | status=%s", res.Body(), res.Status())
-	}
-
 	if err != nil {
 		return nil, fmt.Errorf("error on chatgpt resume request: error=%s", err.Error())
+	}
+
+	if res.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("error on chatgpt resume request: response=%s | status=%s", res.Body(), res.Status())
 	}
 
 	var chatResponse ChatResumeCompletionsResponse
@@ -126,27 +126,27 @@ func (c *Client) resume(ctx context.Context, transcription string) (*summarize.R
 
 	var response summarize.ResumeOutput
 	if err = json.Unmarshal([]byte(choices[0].Message.FunctionCall.Arguments), &response); err != nil {
-		return nil, fmt.Errorf("error on chatgpt resume request: no choices in response")
+		return nil, fmt.Errorf("error on chatgpt resume request: error=%s", err.Error())
 	}
 
 	return &response, nil
 
 }
 
-func (c *Client) fullTextOrganize(ctx context.Context, trascription string) (*string, error) {
+func (c *Client) FullTextOrganize(ctx context.Context, trascription string) (*string, error) {
 	req := c.HttpClient.Client.
 		SetHeader("Authorization", "Bearer "+c.ApiKey).
-		SetHeader("Content-Type", "aaplication/json").
+		SetHeader("Content-Type", "application/json").
 		SetBody(c.buildFullTextOrganizeRequest(trascription))
 
 	res, err := req.Post(basePath)
 
-	if res.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("error on chatgpt full text organize request: response=%s | status=%s", res.Body(), res.Status())
-	}
-
 	if err != nil {
 		return nil, fmt.Errorf("error on chatgpt full text organize request: error=%s", err.Error())
+	}
+
+	if res.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("error on chatgpt full text organize request: response=%s | status=%s", res.Body(), res.Status())
 	}
 
 	var response ChatFullTextCompletionResponse

@@ -1,0 +1,10 @@
+{
+    "chatgpt": {
+        "name":"chatgpt",
+        "url":"http://127.0.0.1:8082",
+        "host":"127.0.0.1:8082",
+        "timeout":10000,
+        "apiKey":"teste",
+        "model":"gpt-4o"
+    }
+}

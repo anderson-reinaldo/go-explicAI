@@ -61,12 +61,12 @@ func (c *Client) Transcribe(ctx context.Context, audio []byte) (*string, error) 
 
 	res, err := req.Post(basePath)
 
-	if res.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("error on whisper request:  response=%s | status=%s", res.Body(), res.Status())
-	}
-
 	if err != nil {
 		return nil, fmt.Errorf("error on whisper request: error=%s", err.Error())
+	}
+
+	if res.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("error on whisper request: response=%s | status=%s", res.Body(), res.Status())
 	}
 
 	var response Response
