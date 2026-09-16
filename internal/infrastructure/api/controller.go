@@ -3,14 +3,15 @@ package api
 import (
 	"bytes"
 	"context"
-	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"path/filepath"
 	"strings"
 
-	"github.com/labstack/echo"
+	"github.com/anderson-reinaldo/go-explicAI/internal/application"
+	"github.com/anderson-reinaldo/go-explicAI/internal/infrastructure/errors"
+	"github.com/anderson-reinaldo/go-explicAI/internal/infrastructure/log"
+	"github.com/labstack/echo/v4"
 )
 
 type ExplicaServer struct {
@@ -31,7 +32,7 @@ func (api *ExplicaServer) Upload(c echo.Context) error {
 	ctx := c.Request().Context()
 	_, err := api.getFileFromRequest(ctx, c)
 	if err != nil {
-		return echo.ErrBadRequest
+		return errors.Handle(c, err)
 	}
 
 	// TODO: init flow
@@ -77,8 +78,8 @@ func (api *ExplicaServer) DeleteSummaryByExternalID(c echo.Context) error {
 func (api *ExplicaServer) getFileFromRequest(ctx context.Context, c echo.Context) ([]byte, error) {
 	file, err := c.FormFile("file")
 	if err != nil {
-		fmt.Println("missing file")
-		return nil, errors.New("missing file")
+		log.LogError(ctx, "missing file", err)
+		return nil, application.MissingFile
 	}
 
 	allowedExtesions := map[string]bool{
@@ -94,12 +95,14 @@ func (api *ExplicaServer) getFileFromRequest(ctx context.Context, c echo.Context
 	fileExtension := strings.ToLower(filepath.Ext(file.Filename))
 
 	if !allowedExtesions[fileExtension] {
-		return nil, errors.New("invalid file")
+		log.LogError(ctx, "invalid file", err)
+		return nil, application.InvalidFile
 	}
 
 	src, err := file.Open()
 	if err != nil {
-		return nil, errors.New("fail to open file")
+		log.LogError(ctx, "fail to open file", err)
+		return nil, application.FailedReadFile
 	}
 	defer src.Close()
 
@@ -107,7 +110,8 @@ func (api *ExplicaServer) getFileFromRequest(ctx context.Context, c echo.Context
 
 	_, err = io.Copy(&buf, src)
 	if err != nil {
-		fmt.Println("fail to read file")
+		log.LogError(ctx, "fail to read file", err)
+		return nil, application.FailedReadFile
 	}
 
 	return buf.Bytes(), nil

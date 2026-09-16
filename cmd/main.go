@@ -1,16 +1,18 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/anderson-reinaldo/go-explicAI/configuration"
+	"github.com/anderson-reinaldo/go-explicAI/internal/infrastructure/log"
 )
 
 func main() {
-	go configuration.NewApplication().Start()
+	c := configuration.Init()
+	go configuration.NewApplication(c).Start()
 	shutDown()
 }
 
@@ -19,8 +21,8 @@ func shutDown() {
 	signal.Notify(signalShutdown, syscall.SIGINT, syscall.SIGTERM)
 	switch <-signalShutdown {
 	case syscall.SIGINT:
-		fmt.Println("SIGINT signal, explicAI is stopping...")
+		log.LogInfo(context.Background(), "SIGINT signal, explicAI is stopping...")
 	case syscall.SIGTERM:
-		fmt.Println("SIGTERM signal, explicAI is stopping...")
+		log.LogInfo(context.Background(), "SIGTERM signal, explicAI is stopping...")
 	}
 }
