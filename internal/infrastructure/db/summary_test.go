@@ -216,7 +216,7 @@ func (s *SummaryDBTestSuite) TestSummaryDBOperations() {
 		err := s.summaryDB.DeleteSummaryByExternalID(s.ctx, nonExistentID)
 
 		s.Error(err)
-		s.Contains(err.Error(), "no rows affected.")
+		s.Equal(err.Error(), "no rows affected.")
 	})
 }
 
