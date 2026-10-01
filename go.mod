@@ -6,13 +6,14 @@ require (
 	github.com/go-resty/resty/v2 v2.17.2
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.11.0
-	github.com/joho/godotenv v1.5.1
 	github.com/labstack/echo/v4 v4.15.4
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.12.1
+	github.com/testcontainers/testcontainers-go v0.44.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.44.0
 	go.uber.org/zap v1.28.0
+	golang.org/x/sync v0.23.0
 )
 
 require (
@@ -66,7 +67,6 @@ require (
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/stretchr/objx v0.5.3 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/testcontainers/testcontainers-go v0.44.0 // indirect
 	github.com/tklauser/go-sysconf v0.4.0 // indirect
 	github.com/tklauser/numcpus v0.12.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect

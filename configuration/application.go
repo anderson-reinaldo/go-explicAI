@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/anderson-reinaldo/go-explicAI/internal/application/service"
 	"github.com/anderson-reinaldo/go-explicAI/internal/infrastructure/api"
+	"github.com/anderson-reinaldo/go-explicAI/internal/infrastructure/db"
 	"github.com/anderson-reinaldo/go-explicAI/internal/infrastructure/log"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -14,11 +16,12 @@ import (
 )
 
 type Application struct {
-	server *echo.Echo
-	config *viper.Viper
+	server  *echo.Echo
+	config  *viper.Viper
+	clients *Clients
 }
 
-func NewApplication(config *viper.Viper) *Application {
+func NewApplication(config *viper.Viper, clients *Clients) *Application {
 	server := echo.New()
 	server.HideBanner = true
 	server.HidePort = true
@@ -39,7 +42,12 @@ func (a *Application) Start() {
 }
 
 func (a *Application) registerControllers() {
-	api.NewExplicaServer().Register(a.server)
+	summary := service.NewSummary(
+		a.clients.AudioTranscript,
+		a.clients.Summarize,
+		db.NewSummary(a.config.GetString("database.url")),
+	)
+	api.NewExplicaServer(summary).Register(a.server)
 }
 
 func initMiddlewares(server *echo.Echo, logger *zap.Logger) {

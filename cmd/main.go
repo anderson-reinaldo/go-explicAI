@@ -12,7 +12,10 @@ import (
 
 func main() {
 	c := configuration.Init()
-	go configuration.NewApplication(c).Start()
+
+	clients := configuration.GetClients(c)
+
+	go configuration.NewApplication(c, clients).Start()
 	shutDown()
 }
 

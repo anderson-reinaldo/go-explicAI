@@ -8,8 +8,10 @@ import (
 
 func Handle(c echo.Context, err error) error {
 	switch errors.Cause(err) {
-	case application.MissingFile, application.InvalidFile:
+	case application.MissingFile, application.InvalidFile, application.ExternalIDIsInvalid:
 		return echo.ErrBadRequest
+	case application.SummaryNotFound:
+		return echo.ErrNotFound
 	case application.FailedReadFile:
 		return echo.ErrUnprocessableEntity
 	default:

@@ -9,16 +9,21 @@ import (
 	"strings"
 
 	"github.com/anderson-reinaldo/go-explicAI/internal/application"
+	"github.com/anderson-reinaldo/go-explicAI/internal/application/service"
 	"github.com/anderson-reinaldo/go-explicAI/internal/infrastructure/errors"
 	"github.com/anderson-reinaldo/go-explicAI/internal/infrastructure/log"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
 type ExplicaServer struct {
+	summary service.SummaryUseCase
 }
 
-func NewExplicaServer() *ExplicaServer {
-	return &ExplicaServer{}
+func NewExplicaServer(summary service.SummaryUseCase) *ExplicaServer {
+	return &ExplicaServer{
+		summary: summary,
+	}
 }
 
 func (api *ExplicaServer) Register(server *echo.Echo) {
@@ -30,45 +35,59 @@ func (api *ExplicaServer) Register(server *echo.Echo) {
 
 func (api *ExplicaServer) Upload(c echo.Context) error {
 	ctx := c.Request().Context()
-	_, err := api.getFileFromRequest(ctx, c)
+	file, err := api.getFileFromRequest(ctx, c)
 	if err != nil {
 		return errors.Handle(c, err)
 	}
 
-	// TODO: init flow
-	return c.JSON(http.StatusCreated, nil)
+	result, err := api.summary.CreateSummaryAndTriggerAIProcess(ctx, file)
+	if err != nil {
+		return errors.Handle(c, err)
+	}
+	return c.JSON(http.StatusCreated, result)
 }
 
 func (api *ExplicaServer) ListSummaries(c echo.Context) error {
-	//ctx := c.Request().Context()
+	ctx := c.Request().Context()
 
-	//init get flow
+	result, err := api.summary.ListSummaries(ctx)
+	if err != nil {
+		return errors.Handle(c, err)
+	}
 
-	return c.JSON(http.StatusOK, nil)
+	return c.JSON(http.StatusOK, result)
 }
 
 func (api *ExplicaServer) GetSummaryByExternalID(c echo.Context) error {
-	//ctx := c.Request().Context()
-	//externalId := c.Param("externalId")
+	ctx := c.Request().Context()
+	externalId := c.Param("externalId")
 
-	//parsedExtenalID, err := uuid.Parse(externalId)
-	//if err != nil {
-	//	return echo.ErrBadRequest
-	//}
+	parsedExtenalID, err := uuid.Parse(externalId)
+	if err != nil {
+		return errors.Handle(c, application.ExternalIDIsInvalid)
+	}
 
-	return c.JSON(http.StatusOK, nil)
+	result, err := api.summary.GetSummaryByExternalID(ctx, parsedExtenalID)
+	if err != nil {
+		return errors.Handle(c, err)
+	}
+
+	return c.JSON(http.StatusOK, result)
 }
 
 func (api *ExplicaServer) DeleteSummaryByExternalID(c echo.Context) error {
-	//ctx := c.Request().Context()
-	//externalId := c.Param("externalId")
+	ctx := c.Request().Context()
+	externalId := c.Param("externalId")
 
-	//parsedExtenalID, err := uuid.Parse(externalId)
-	//if err != nil {
-	//	return echo.ErrBadRequest
-	//}
+	parsedExtenalID, err := uuid.Parse(externalId)
+	if err != nil {
+		return errors.Handle(c, application.ExternalIDIsInvalid)
+	}
 
-	//TODO: delete flow
+	err = api.summary.DeleteSummaryByExternalID(ctx, parsedExtenalID)
+	if err != nil {
+		return errors.Handle(c, err)
+	}
 
 	return c.JSON(http.StatusOK, map[string]string{
 		"message": "O resumo foi removido",
