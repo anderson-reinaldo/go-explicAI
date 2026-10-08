@@ -14,6 +14,7 @@ services:
     volumes:
       - "db-data:/var/lib/postgresql/data"
       - "./ddl.sql:/docker-entrypoint-initdb.d/1.sql:ro"
+      - "/home/reinaldo/Documentos/dumps:/dumps"
     networks:
       - datanode-network
 

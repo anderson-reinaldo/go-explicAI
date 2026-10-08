@@ -54,12 +54,14 @@ func (c *Client) Transcribe(ctx context.Context, audio []byte) (*string, error) 
 		return nil, fmt.Errorf("error on whisper request: error=%s", err.Error())
 	}
 
+	clients.Mutex.Lock()
 	req := c.HttpClient.Client.
 		SetHeader("Authorization", "Bearer "+c.ApiKey).
 		SetHeader("Content-Type", writer.FormDataContentType()).
 		SetBody(body.Bytes())
 
 	res, err := req.Post(basePath)
+	clients.Mutex.Unlock()
 
 	if err != nil {
 		return nil, fmt.Errorf("error on whisper request: error=%s", err.Error())

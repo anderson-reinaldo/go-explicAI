@@ -99,12 +99,14 @@ func NewClient(serviceName, URL, apiKey, model string, timeout int64) *Client {
 }
 
 func (c *Client) Resume(ctx context.Context, transcription string) (*summarize.ResumeOutput, error) {
+	clients.Mutex.Lock()
 	req := c.HttpClient.Client.
 		SetHeader("Authorization", "Bearer "+c.ApiKey).
 		SetHeader("Content-Type", "application/json").
 		SetBody(c.buildResumeRequest(transcription))
 
 	res, err := req.Post(basePath)
+	clients.Mutex.Unlock()
 
 	if err != nil {
 		return nil, fmt.Errorf("error on chatgpt resume request: error=%s", err.Error())
@@ -134,12 +136,14 @@ func (c *Client) Resume(ctx context.Context, transcription string) (*summarize.R
 }
 
 func (c *Client) FullTextOrganize(ctx context.Context, trascription string) (*string, error) {
+	clients.Mutex.Lock()
 	req := c.HttpClient.Client.
 		SetHeader("Authorization", "Bearer "+c.ApiKey).
 		SetHeader("Content-Type", "application/json").
 		SetBody(c.buildFullTextOrganizeRequest(trascription))
 
 	res, err := req.Post(basePath)
+	clients.Mutex.Unlock()
 
 	if err != nil {
 		return nil, fmt.Errorf("error on chatgpt full text organize request: error=%s", err.Error())

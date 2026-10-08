@@ -1,10 +1,13 @@
 package clients
 
 import (
+	"sync"
 	"time"
 
 	"github.com/go-resty/resty/v2"
 )
+
+var Mutex sync.Mutex
 
 type BaseHTTP struct {
 	Client *resty.Request

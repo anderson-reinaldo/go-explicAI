@@ -22,6 +22,7 @@ type Application struct {
 }
 
 func NewApplication(config *viper.Viper, clients *Clients) *Application {
+
 	server := echo.New()
 	server.HideBanner = true
 	server.HidePort = true
@@ -29,8 +30,9 @@ func NewApplication(config *viper.Viper, clients *Clients) *Application {
 	logger := log.StartLog()
 	initMiddlewares(server, logger)
 	return &Application{
-		server: server,
-		config: config,
+		server:  server,
+		config:  config,
+		clients: clients,
 	}
 }
 

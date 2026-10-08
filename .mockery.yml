@@ -1,0 +1,20 @@
+template: testify
+dir: internal/gateway/mocks
+pkgname: gatewaymocks
+filename: "mock_{{.InterfaceName}}.go"
+structname: "{{.Mock}}{{.InterfaceName}}"
+packages:
+  github.com/anderson-reinaldo/go-explicAI/internal/gateway/audiotranscript:
+    config:
+      all: true
+  github.com/anderson-reinaldo/go-explicAI/internal/gateway/summarize:
+    config:
+      all: true
+  github.com/anderson-reinaldo/go-explicAI/internal/gateway/repository:
+    config:
+      all: true
+  github.com/anderson-reinaldo/go-explicAI/internal/application/service:
+    config:
+      all: true
+      dir: internal/application/service/mocks
+      pkgname: servicemocks

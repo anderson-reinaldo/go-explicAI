@@ -66,14 +66,66 @@ func (s *Summary) CreateSummaryAndTriggerAIProcess(ctx context.Context, audio []
 }
 
 func (s *Summary) ListSummaries(ctx context.Context) (*SummaryListOutput, error) {
-	return nil, nil
+	summaries, err := s.repository.GetSummaries(ctx)
+	if err != nil {
+		return nil, application.UnexpectedErrorList
+	}
+
+	var summariesOutput []SummarySimpleOutput
+
+	for _, sum := range summaries {
+		summariesOutput = append(summariesOutput, SummarySimpleOutput{
+			ExternalID:  sum.ExternalID,
+			Status:      sum.Status,
+			CreatedAt:   sum.CreatedAt,
+			UpdatedAt:   sum.UpdateAt,
+			Progress:    int(sum.Progress.Int32),
+			Title:       sum.Title.String,
+			Description: sum.Description.String,
+		})
+
+	}
+
+	return &SummaryListOutput{
+		Data: summariesOutput,
+	}, nil
 }
 
 func (s *Summary) GetSummaryByExternalID(ctx context.Context, externalID uuid.UUID) (*SummaryDetailedOutput, error) {
-	return nil, nil
+	summary, err := s.repository.GetSummaryByExternalID(ctx, externalID)
+	if err == application.SummaryNotFound {
+		return nil, err
+	}
+
+	if err != nil {
+		log.LogError(ctx, "error on get summary", err)
+		return nil, err
+	}
+
+	return &SummaryDetailedOutput{
+		ExternalID:   summary.ExternalID,
+		Status:       summary.Status,
+		CreatedAt:    summary.CreatedAt,
+		UpdatedAt:    summary.UpdateAt,
+		Progress:     int(summary.Progress.Int32),
+		Title:        summary.Title.String,
+		Description:  summary.Description.String,
+		BriefResume:  summary.BriefResume.String,
+		MediumResume: summary.MediumResume.String,
+		FullText:     summary.FullText.String,
+	}, nil
 }
 
 func (s *Summary) DeleteSummaryByExternalID(ctx context.Context, externalID uuid.UUID) error {
+	err := s.repository.DeleteSummaryByExternalID(ctx, externalID)
+	if err == application.SummaryNotFound {
+		return err
+	}
+
+	if err != nil {
+		log.LogError(ctx, "error on delete summary", err)
+		return err
+	}
 	return nil
 }
 
@@ -161,7 +213,7 @@ func (s *Summary) organizeText(ctx context.Context, transcription string, extern
 func (s *Summary) registerSummarizedSuccess(ctx context.Context, externalID uuid.UUID, resume summarize.ResumeOutput, fulltext string) {
 	if err := s.repository.UpdateSummarySummarized(ctx, repository.SummaryUpdateSummarizedInput{
 		ExternalID:   externalID,
-		Status:       repository.SummarizedFailed,
+		Status:       repository.Summarized,
 		Title:        resume.Title,
 		Description:  resume.Description,
 		BriefResume:  resume.BriefResume,

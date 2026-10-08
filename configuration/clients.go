@@ -1,6 +1,8 @@
 package configuration
 
 import (
+	"os"
+
 	"github.com/anderson-reinaldo/go-explicAI/internal/gateway/audiotranscript"
 	"github.com/anderson-reinaldo/go-explicAI/internal/gateway/summarize"
 	"github.com/anderson-reinaldo/go-explicAI/internal/infrastructure/clients/chatgpt"
@@ -24,7 +26,7 @@ func buildWhisperClient(config *viper.Viper) audiotranscript.AudioTranscript {
 	return whisper.NewClient(
 		config.GetString("name"),
 		config.GetString("host"),
-		openAiApiKey,
+		os.Getenv("OPENAI_API_KEY"),
 		config.GetString("model"),
 		config.GetInt64("timeout"),
 	)
@@ -34,7 +36,7 @@ func buildChatgptClient(config *viper.Viper) summarize.Summarize {
 	return chatgpt.NewClient(
 		config.GetString("name"),
 		config.GetString("host"),
-		openAiApiKey,
+		os.Getenv("OPENAI_API_KEY"),
 		config.GetString("model"),
 		config.GetInt64("timeout"),
 	)

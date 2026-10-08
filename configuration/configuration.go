@@ -8,17 +8,17 @@ import (
 
 	"github.com/anderson-reinaldo/go-explicAI/internal/infrastructure/log"
 	"github.com/spf13/viper"
+	"github.com/subosito/gotenv"
 )
 
-var (
-	openAiApiKey = os.Getenv("OPENAI_API_KEY")
-	config       = viper.New()
-)
+var config = viper.New()
 
 func Init() *viper.Viper {
+	_ = gotenv.Load()
+	config.AutomaticEnv()
 	defaultConfigs()
 
-	if openAiApiKey == "" {
+	if os.Getenv("OPENAI_API_KEY") == "" {
 		log.LogError(context.Background(), "OPENAI_API_KEY is not set",
 			errors.New("openai api key is required"))
 	}
@@ -26,7 +26,11 @@ func Init() *viper.Viper {
 }
 
 func defaultConfigs() {
-	config.SetDefault("server.host", fmt.Sprintf("%s:%s", config.Get("HOST"), config.Get("PORT")))
+	host, port := config.GetString("HOST"), config.GetString("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	config.SetDefault("server.host", fmt.Sprintf("%s:%s", host, port))
 	config.SetDefault("app.name", "explicaAI")
 	config.SetDefault("whisper.name", "whisper")
 	config.SetDefault("whisper.url", "api.openai.com")
@@ -37,5 +41,5 @@ func defaultConfigs() {
 	config.SetDefault("chatgpt.host", "https://api.openai.com")
 	config.SetDefault("chatgpt.timeout", 3000)
 	config.SetDefault("chatgpt.model", "gpt-4o")
-	config.SetDefault("database.url", "postgre://admin:admin@localhost:5432/explicai")
+	config.SetDefault("database.url", "postgres://admin:admin@localhost:5432/explicai")
 }

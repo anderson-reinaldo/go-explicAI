@@ -10,4 +10,5 @@ var (
 	ExternalIDIsInvalid   = errors.New("externalID is invalid")
 	InternalDatabaseError = errors.New("internal database error")
 	ResumeTextFailed      = errors.New("resume text failed")
+	UnexpectedErrorList   = errors.New("error on list summarie")
 )
