@@ -1,0 +1,4 @@
+Criar arquivo de cobertura de testes: go test -coverprofile=coverage.out ./... -race
+Limpar cache de testes: go clean -testcache
+Rodar testes recursivamente: go test -v   ./...
+Abrir arquivo de cobertura de testes no navegador: go tool cover -html=coverage.out

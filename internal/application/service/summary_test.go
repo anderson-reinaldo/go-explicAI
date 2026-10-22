@@ -78,11 +78,12 @@ func (s *SummaryTestSuite) TestSummaryCreate() {
 		}
 
 		s.repository.EXPECT().
-			UpdateSummaryTranscribed(mock.Anything, ustInput)
+			UpdateSummaryTranscribed(mock.Anything, ustInput).
+			Return(nil)
 
 		s.summarize = new(gatewaymocks.MockSummarize)
 		s.summarize.EXPECT().
-			Resume(mock.Anything, nil).
+			Resume(mock.Anything, textTranscribed).
 			Return(&summarize.ResumeOutput{
 				Title:        title,
 				Description:  description,
@@ -303,4 +304,183 @@ func (s *SummaryTestSuite) TestAIProcessSummary() {
 		s.repository.AssertCalled(s.T(), "UpdateSummaryTranscribed", mock.Anything, mock.Anything)
 	})
 
+}
+
+func (s *SummaryTestSuite) TestListSummaries() {
+	s.Run("successful list summaries", func() {
+		summaryExternalID2Str := "1032d178-28c0-43cf-9dda-8b99c6ff3838"
+		summaryExternalID2UUID := uuid.MustParse(summaryExternalID2Str)
+
+		s.repository = new(gatewaymocks.MockReposistory)
+		s.repository.EXPECT().GetSummaries(mock.Anything).
+			Return([]repository.SummaryOutput{
+				{
+					ExternalID: summaryExternalIDUUID,
+					CreatedAt:  createdAt,
+					UpdateAt:   createdAt,
+					Status:     "SUMMARIZED",
+					Title: sql.NullString{
+						String: title,
+						Valid:  true,
+					},
+					Description: sql.NullString{
+						String: description,
+						Valid:  true,
+					},
+					BriefResume: sql.NullString{
+						String: briefResume,
+						Valid:  true,
+					},
+					MediumResume: sql.NullString{
+						String: mediumResume,
+						Valid:  true,
+					},
+					FullText: sql.NullString{
+						String: fulltext,
+						Valid:  true,
+					},
+					Progress: sql.NullInt32{
+						Int32: 100,
+						Valid: true,
+					},
+				},
+				{
+					ExternalID: summaryExternalID2UUID,
+					CreatedAt:  createdAt,
+					Status:     "RECEIVED_FILE",
+				},
+			}, nil)
+
+		service := NewSummary(s.audiotranscript, s.summarize, s.repository)
+		output, err := service.ListSummaries(s.ctx)
+		s.Require().NoError(err)
+		s.Equal(summaryExternalIDUUID, output.Data[0].ExternalID)
+		s.Equal("SUMMARIZED", output.Data[0].Status)
+		s.Equal(createdAt, output.Data[0].CreatedAt)
+		s.Equal(createdAt, output.Data[0].UpdatedAt)
+		s.Equal(title, output.Data[0].Title)
+		s.Equal(description, output.Data[0].Description)
+		s.Equal(100, output.Data[0].Progress)
+
+		s.Equal(summaryExternalID2UUID, output.Data[1].ExternalID)
+		s.Equal("RECEIVED_FILE", output.Data[1].Status)
+		s.Equal(createdAt, output.Data[1].CreatedAt)
+	})
+
+	s.Run("fail list summaries", func() {
+		s.repository = new(gatewaymocks.MockReposistory)
+		s.repository.EXPECT().GetSummaries(s.ctx).
+			Return(nil, errors.New("some error"))
+
+		service := NewSummary(s.audiotranscript, s.summarize, s.repository)
+		_, err := service.ListSummaries(s.ctx)
+		s.Require().ErrorIs(err, application.UnexpectedErrorList)
+	})
+}
+
+func (s *SummaryTestSuite) TestGetSummaryByExternalID() {
+	s.Run("successful get summary by external id", func() {
+		s.repository = new(gatewaymocks.MockReposistory)
+		s.repository.EXPECT().
+			GetSummaryByExternalID(mock.Anything, summaryExternalIDUUID).
+			Return(&repository.SummaryOutput{
+				ExternalID: summaryExternalIDUUID,
+				Status:     repository.StatusToString[repository.Summarized].Status,
+				CreatedAt:  createdAt,
+				UpdateAt:   createdAt,
+				Title: sql.NullString{
+					String: title,
+					Valid:  true,
+				},
+				Description: sql.NullString{
+					String: description,
+					Valid:  true,
+				},
+				BriefResume: sql.NullString{
+					String: briefResume,
+					Valid:  true,
+				},
+				MediumResume: sql.NullString{
+					String: mediumResume,
+					Valid:  true,
+				},
+				FullText: sql.NullString{
+					String: fulltext,
+					Valid:  true,
+				},
+				Progress: sql.NullInt32{
+					Int32: 100,
+					Valid: true,
+				},
+			}, nil)
+
+		service := NewSummary(s.audiotranscript, s.summarize, s.repository)
+		output, err := service.GetSummaryByExternalID(s.ctx, summaryExternalIDUUID)
+		s.Require().NoError(err)
+		s.Equal(summaryExternalIDUUID, output.ExternalID)
+		s.Equal(repository.StatusToString[repository.Summarized].Status, output.Status)
+		s.Equal(100, output.Progress)
+		s.Equal(title, output.Title)
+		s.Equal(description, output.Description)
+		s.Equal(briefResume, output.BriefResume)
+		s.Equal(mediumResume, output.MediumResume)
+
+	})
+
+	s.Run("error get summary by external id", func() {
+		s.repository = new(gatewaymocks.MockReposistory)
+		s.repository.EXPECT().
+			GetSummaryByExternalID(mock.Anything, summaryExternalIDUUID).
+			Return(nil, errors.New("some error"))
+
+		service := NewSummary(s.audiotranscript, s.summarize, s.repository)
+		_, err := service.GetSummaryByExternalID(s.ctx, summaryExternalIDUUID)
+		s.Require().Error(err)
+	})
+
+	s.Run("get summary by external id not found", func() {
+		s.repository = new(gatewaymocks.MockReposistory)
+		s.repository.EXPECT().
+			GetSummaryByExternalID(mock.Anything, summaryExternalIDUUID).
+			Return(nil, application.SummaryNotFound)
+
+		service := NewSummary(s.audiotranscript, s.summarize, s.repository)
+		_, err := service.GetSummaryByExternalID(s.ctx, summaryExternalIDUUID)
+		s.Require().ErrorIs(err, application.SummaryNotFound)
+	})
+}
+
+func (s *SummaryTestSuite) TestDeleteSummaryByExternalID() {
+	s.Run("successful delete summary by external id", func() {
+		s.repository = new(gatewaymocks.MockReposistory)
+		s.repository.EXPECT().
+			DeleteSummaryByExternalID(mock.Anything, summaryExternalIDUUID).
+			Return(nil)
+
+		service := NewSummary(s.audiotranscript, s.summarize, s.repository)
+		err := service.DeleteSummaryByExternalID(s.ctx, summaryExternalIDUUID)
+		s.Require().NoError(err)
+	})
+
+	s.Run("error delete summary by external id", func() {
+		s.repository = new(gatewaymocks.MockReposistory)
+		s.repository.EXPECT().
+			DeleteSummaryByExternalID(mock.Anything, summaryExternalIDUUID).
+			Return(errors.New("some error"))
+
+		service := NewSummary(s.audiotranscript, s.summarize, s.repository)
+		err := service.DeleteSummaryByExternalID(s.ctx, summaryExternalIDUUID)
+		s.Require().Error(err)
+	})
+
+	s.Run("delete summary by external id not found", func() {
+		s.repository = new(gatewaymocks.MockReposistory)
+		s.repository.EXPECT().
+			DeleteSummaryByExternalID(mock.Anything, summaryExternalIDUUID).
+			Return(application.SummaryNotFound)
+
+		service := NewSummary(s.audiotranscript, s.summarize, s.repository)
+		err := service.DeleteSummaryByExternalID(s.ctx, summaryExternalIDUUID)
+		s.Require().ErrorIs(err, application.SummaryNotFound)
+	})
 }
