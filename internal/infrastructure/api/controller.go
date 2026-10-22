@@ -86,7 +86,7 @@ func (api *ExplicaServer) DeleteSummaryByExternalID(c echo.Context) error {
 
 	err = api.summary.DeleteSummaryByExternalID(ctx, parsedExtenalID)
 	if err != nil {
-		return errors.Handle(c, err)
+		return errors.Handle(c, application.SummaryNotFound)
 	}
 
 	return c.JSON(http.StatusOK, map[string]string{

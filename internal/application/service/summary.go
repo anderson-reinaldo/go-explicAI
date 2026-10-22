@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/anderson-reinaldo/go-explicAI/internal/application"
 	"github.com/anderson-reinaldo/go-explicAI/internal/gateway/audiotranscript"
@@ -124,6 +125,7 @@ func (s *Summary) DeleteSummaryByExternalID(ctx context.Context, externalID uuid
 
 	if err != nil {
 		log.LogError(ctx, "error on delete summary", err)
+		fmt.Println(err.Error())
 		return err
 	}
 	return nil

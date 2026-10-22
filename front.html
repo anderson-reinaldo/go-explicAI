@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ExplicAI — Resumos de áudio</title>
+<meta name="description" content="Grave ou envie um áudio e receba transcrição e resumo estruturados.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+    --night: #0a1d20;
+    --night-2: #11292d;
+    --night-line: #1f3d42;
+    --on-night: #e9f1f1;
+    --on-night-2: #94afb2;
+    --amber: #f4b73d;
+    --amber-deep: #8a5a00;
+    --amber-soft: #fcf0d0;
+
+    --bg: #f2f5f4;
+    --surface: #ffffff;
+    --ink: #0f2327;
+    --ink-2: #4a5f63;
+    --ink-3: #7c8e91;
+    --line: #dde4e5;
+    --rec: #cf3b30;
+    --rec-soft: #fbe6e3;
+    --done: #136b5f;
+    --done-soft: #def1ed;
+
+    --display: "Bricolage Grotesque", "Hanken Grotesk", system-ui, sans-serif;
+    --text: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+    margin: 0;
+    font-family: var(--text);
+    font-size: 16px;
+    line-height: 1.55;
+    color: var(--ink);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, p { margin: 0; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+.wrap { max-width: 1160px; margin: 0 auto; padding: 0 28px; }
+
+/* ---------- hero ---------- */
+.hero { background: var(--night); color: var(--on-night); }
+.nav { display: flex; align-items: center; justify-content: space-between; padding: 22px 0; }
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 700; font-size: 1.25rem; letter-spacing: -.02em; }
+.brand-mark { width: 30px; height: 30px; border-radius: 9px; background: var(--amber); display: grid; place-items: center; }
+.nav-note { color: var(--on-night-2); font-size: .9rem; }
+
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 480px); gap: 64px; align-items: center; padding: 48px 0 88px; }
+.hero h1 {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(2.5rem, 5.4vw, 4.25rem);
+    line-height: 1.02;
+    letter-spacing: -.035em;
+    max-width: 12ch;
+}
+.hero-sub { margin-top: 22px; font-size: 1.125rem; color: var(--on-night-2); max-width: 44ch; }
+.hero-flow { display: flex; gap: 10px; align-items: center; margin-top: 32px; font-size: .95rem; color: var(--on-night); flex-wrap: wrap; }
+.hero-flow span { padding: 6px 12px; border: 1px solid var(--night-line); border-radius: 999px; }
+.hero-flow i { width: 16px; height: 1px; background: var(--night-line); }
+
+.rig { background: var(--night-2); border: 1px solid var(--night-line); border-radius: 20px; padding: 28px 28px 24px; box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .6); }
+.rig canvas { display: block; width: 100%; height: 132px; }
+.rig-row { display: flex; align-items: center; justify-content: space-between; margin-top: 18px; gap: 16px; }
+.timer { font-family: var(--display); font-weight: 700; font-size: 2.25rem; letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1; }
+.rig-state { display: flex; align-items: center; gap: 8px; color: var(--on-night-2); font-size: .9rem; margin-top: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--on-night-2); }
+.rig.live .dot { background: var(--rec); animation: blink 1.1s ease-in-out infinite; }
+@keyframes blink { 50% { opacity: .2; } }
+
+.rec-btn {
+    width: 76px; height: 76px; border-radius: 50%; border: 0; cursor: pointer; flex-shrink: 0;
+    background: var(--amber); display: grid; place-items: center;
+    box-shadow: 0 0 0 6px rgba(244, 183, 61, .18);
+    transition: transform .15s, box-shadow .15s;
+}
+.rec-btn:hover { transform: scale(1.04); box-shadow: 0 0 0 9px rgba(244, 183, 61, .22); }
+.rec-btn .ic-stop { display: none; }
+.rig.live .rec-btn { background: var(--rec); box-shadow: 0 0 0 6px rgba(207, 59, 48, .25); }
+.rig.live .ic-mic { display: none; }
+.rig.live .ic-stop { display: block; }
+.rig-foot { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--night-line); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; font-size: .9rem; color: var(--on-night-2); }
+.link-btn { background: none; border: 1px solid var(--night-line); border-radius: 8px; padding: 8px 14px; color: var(--on-night); font-weight: 600; font-size: .9rem; cursor: pointer; }
+.link-btn:hover:not(:disabled) { background: var(--night); }
+.link-btn:disabled { opacity: .4; cursor: not-allowed; }
+.preview { margin-top: 16px; }
+.preview audio { width: 100%; height: 36px; }
+
+/* ---------- list ---------- */
+.library { padding: 56px 0 96px; margin-top: -40px; }
+.board { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 20px 40px -28px rgba(15, 35, 39, .35); overflow: hidden; }
+.board-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 28px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.board-title { font-family: var(--display); font-size: 1.5rem; font-weight: 700; letter-spacing: -.02em; }
+.stats { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { font-size: .85rem; font-weight: 600; padding: 4px 12px; border-radius: 999px; background: var(--bg); color: var(--ink-2); }
+.chip.run { background: var(--amber-soft); color: var(--amber-deep); }
+.chip.ok { background: var(--done-soft); color: var(--done); }
+.chip.fail { background: var(--rec-soft); color: var(--rec); }
+
+.rows { list-style: none; margin: 0; padding: 0; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) 300px auto; gap: 32px; align-items: center; padding: 22px 28px; border-top: 1px solid var(--line); }
+.rows .row:first-child { border-top: 0; }
+.row-title { font-family: var(--display); font-weight: 700; font-size: 1.125rem; letter-spacing: -.01em; line-height: 1.3; }
+.row-desc { color: var(--ink-2); font-size: .95rem; margin-top: 4px; max-width: 60ch; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.row-meta { color: var(--ink-3); font-size: .85rem; margin-top: 6px; }
+
+.pipe { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.pipe li { font-size: .78rem; color: var(--ink-3); font-weight: 500; }
+.pipe .bar { height: 6px; border-radius: 3px; background: var(--line); margin-bottom: 7px; overflow: hidden; }
+.pipe .bar i { display: block; height: 100%; width: 0; background: var(--ink); border-radius: 3px; transition: width .5s ease; }
+.pipe .done { color: var(--ink-2); }
+.pipe .done .bar i { width: 100%; }
+.pipe .active { color: var(--amber-deep); font-weight: 700; }
+.pipe .active .bar i { background: var(--amber); width: var(--p, 40%); }
+.pipe .failed { color: var(--rec); font-weight: 700; }
+.pipe .failed .bar i { background: var(--rec); width: 100%; }
+.state-line { font-size: .85rem; font-weight: 600; margin-bottom: 10px; }
+.state-line.ok { color: var(--done); }
+.state-line.run { color: var(--amber-deep); }
+.state-line.fail { color: var(--rec); }
+
+.row-actions { display: flex; gap: 8px; justify-content: flex-end; width: 220px; }
+.btn { white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; height: 38px; padding: 0 16px; border-radius: 8px; border: 1px solid transparent; font-weight: 600; font-size: .9rem; cursor: pointer; transition: background-color .15s; }
+.btn-dark { background: var(--ink); color: #fff; }
+.btn-dark:hover { background: #1c3a40; }
+.btn-ghost { background: transparent; border-color: var(--line); color: var(--ink-2); }
+.btn-ghost:hover { background: var(--bg); color: var(--ink); }
+.btn-danger { background: transparent; border-color: var(--line); color: var(--rec); }
+.btn-danger:hover { background: var(--rec-soft); border-color: transparent; }
+.btn-solid-danger { background: var(--rec); color: #fff; }
+.btn-solid-danger:hover { filter: brightness(.92); }
+
+.empty { text-align: center; padding: 64px 24px; }
+.empty h3 { font-family: var(--display); font-size: 1.25rem; font-weight: 700; }
+.empty p { color: var(--ink-2); margin: 6px auto 0; max-width: 42ch; }
+.skeleton { height: 96px; margin: 0; background: linear-gradient(90deg, var(--surface) 25%, var(--bg) 50%, var(--surface) 75%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; border-top: 1px solid var(--line); }
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+/* ---------- dialogs ---------- */
+dialog { border: none; padding: 0; color: var(--ink); background: var(--surface); }
+dialog::backdrop { background: rgba(8, 22, 25, .6); backdrop-filter: blur(3px); }
+.confirm { border-radius: 14px; width: min(400px, calc(100vw - 32px)); padding: 26px; }
+.confirm h3 { font-family: var(--display); font-size: 1.25rem; font-weight: 700; }
+.confirm p { color: var(--ink-2); margin-top: 6px; }
+.confirm .btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 22px; }
+
+.drawer { margin: 0 0 0 auto; height: 100dvh; max-height: none; width: min(700px, 100vw); }
+.drawer[open] { display: flex; flex-direction: column; animation: slide-in .24s ease-out; }
+@keyframes slide-in { from { transform: translateX(28px); opacity: 0; } }
+.drawer-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 28px; border-bottom: 1px solid var(--line); color: var(--ink-3); font-size: .9rem; }
+.drawer-body { overflow-y: auto; padding: 36px 28px 64px; }
+.doc { max-width: 62ch; margin: 0 auto; }
+.doc h2 { font-family: var(--display); font-size: 2rem; line-height: 1.1; letter-spacing: -.03em; font-weight: 800; }
+.doc .lead { color: var(--ink-2); margin-top: 10px; font-size: 1.0625rem; }
+.doc section { margin-top: 32px; }
+.doc h3 { font-family: var(--display); font-size: 1.0625rem; font-weight: 700; margin-bottom: 8px; }
+.doc .tldr { background: var(--amber-soft); border-radius: 10px; padding: 16px 18px; color: var(--ink); }
+.doc .full { line-height: 1.75; color: var(--ink-2); white-space: pre-wrap; }
+
+.toast-zone { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: grid; gap: 8px; z-index: 10; width: min(420px, calc(100vw - 32px)); }
+.toast { background: var(--ink); color: #fff; padding: 12px 16px; border-radius: 10px; font-size: .925rem; box-shadow: 0 10px 30px -10px rgba(0, 0, 0, .4); }
+.toast.err { background: var(--rec); }
+
+@media (max-width: 960px) {
+    .hero-grid { grid-template-columns: 1fr; gap: 40px; padding: 24px 0 72px; }
+    .row { grid-template-columns: 1fr; gap: 16px; }
+    .row-actions { justify-content: flex-start; }
+}
+@media (max-width: 560px) {
+    .wrap { padding: 0 16px; }
+    .nav-note { display: none; }
+    .rig { padding: 20px 18px; }
+    .board-head, .row { padding-left: 18px; padding-right: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<header class="hero">
+    <div class="wrap">
+        <nav class="nav">
+            <div class="brand">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8v0M5 5v6M8 2v12M11 5v6M14 8v0" stroke="#0a1d20" stroke-width="2" stroke-linecap="round"/></svg>
+                </span>
+                ExplicAI
+            </div>
+            <span class="nav-note">Transcrição e resumo de áudio</span>
+        </nav>
+
+        <div class="hero-grid">
+            <div>
+                <h1>Fale. A gente escreve o resumo.</h1>
+                <p class="hero-sub">Grave uma conversa ou envie um arquivo. O ExplicAI transcreve, resume e mostra cada etapa até o texto ficar pronto.</p>
+                <div class="hero-flow" aria-hidden="true"><span>Áudio</span><i></i><span>Transcrição</span><i></i><span>Resumo</span></div>
+            </div>
+
+            <section class="rig" id="rig" aria-label="Gravador">
+                <canvas id="wave" aria-hidden="true"></canvas>
+                <div class="rig-row">
+                    <div>
+                        <div class="timer" id="timer" role="timer" aria-live="off">00:00</div>
+                        <div class="rig-state"><i class="dot"></i><span id="rec-state-text">Pronto para gravar</span></div>
+                    </div>
+                    <button class="rec-btn" id="rec-btn" type="button" aria-label="Iniciar gravação">
+                        <svg class="ic-mic" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#0a1d20" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3" fill="#0a1d20"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+                        <svg class="ic-stop" width="26" height="26" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="3" fill="#fff"/></svg>
+                    </button>
+                </div>
+                <div class="preview" id="preview" hidden><audio id="audio-preview" controls></audio></div>
+                <div class="rig-foot">
+                    <span>Já tem a gravação?</span>
+                    <button class="link-btn" id="pick-file" type="button">Enviar arquivo de áudio</button>
+                    <input type="file" id="file-input" accept="audio/*" hidden>
+                </div>
+            </section>
+        </div>
+    </div>
+</header>
+
+<main class="library">
+    <div class="wrap">
+        <section class="board" aria-labelledby="list-title">
+            <div class="board-head">
+                <h2 class="board-title" id="list-title">Seus resumos</h2>
+                <div class="stats" id="stats"></div>
+            </div>
+            <ul class="rows" id="summary-list" aria-live="polite">
+                <li class="skeleton"></li>
+                <li class="skeleton"></li>
+            </ul>
+        </section>
+    </div>
+</main>
+
+<dialog class="drawer" id="detail" aria-labelledby="detail-title">
+    <div class="drawer-head">
+        <span>Detalhe do resumo</span>
+        <button class="btn btn-ghost" id="close-detail" type="button">Fechar</button>
+    </div>
+    <div class="drawer-body"><article class="doc" id="detail-content"></article></div>
+</dialog>
+
+<dialog class="confirm" id="confirm" aria-labelledby="confirm-title">
+    <h3 id="confirm-title">Excluir este resumo?</h3>
+    <p>O áudio, a transcrição e o resumo serão removidos. Não dá para desfazer.</p>
+    <div class="btns">
+        <button class="btn btn-ghost" id="confirm-cancel" type="button">Cancelar</button>
+        <button class="btn btn-solid-danger" id="confirm-ok" type="button">Excluir resumo</button>
+    </div>
+</dialog>
+
+<div class="toast-zone" id="toasts" role="status"></div>
+
+<script>
+const baseUrl = "http://localhost:8080";
+const $ = id => document.getElementById(id);
+
+const STATUS = {
+    RECEIVED_FILE:     { label: "Transcrevendo",        tone: "run",  steps: ["done", "active", "todo"] },
+    TRANSCRIBED:       { label: "Gerando resumo",       tone: "run",  steps: ["done", "done", "active"] },
+    SUMMARIZED:        { label: "Concluído",            tone: "ok",   steps: ["done", "done", "done"] },
+    TRANSCRIBED_FAILED:{ label: "Falha na transcrição", tone: "fail", steps: ["done", "failed", "todo"] },
+    SUMMARIZED_FAILED: { label: "Falha no resumo",      tone: "fail", steps: ["done", "done", "failed"] }
+};
+const STEP_NAMES = ["Recebido", "Transcrito", "Resumido"];
+const FINAL = ["TRANSCRIBED_FAILED", "SUMMARIZED_FAILED", "SUMMARIZED"];
+
+function el(tag, props = {}, children = []) {
+    const n = document.createElement(tag);
+    for (const [k, v] of Object.entries(props)) {
+        if (k === "class") n.className = v;
+        else if (k === "text") n.textContent = v;
+        else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+        else n.setAttribute(k, v);
+    }
+    [].concat(children).forEach(c => c && n.appendChild(c));
+    return n;
+}
+
+function toast(msg, isErr = false) {
+    const t = el("div", { class: "toast" + (isErr ? " err" : ""), text: msg });
+    $("toasts").appendChild(t);
+    setTimeout(() => t.remove(), 4500);
+}
+
+const fmtDate = s => new Date(s).toLocaleString("pt-BR", { dateStyle: "medium", timeStyle: "short" });
+
+/* ---------- list ---------- */
+let pollTimer = null;
+
+function renderRow(s) {
+    const st = STATUS[s.status] || { label: s.status, tone: "run", steps: ["done", "todo", "todo"] };
+
+    const pipe = el("ol", { class: "pipe", "aria-label": "Etapas do processamento" },
+        STEP_NAMES.map((name, i) => {
+            const state = st.steps[i];
+            const li = el("li", { class: state }, [el("div", { class: "bar" }, el("i")), el("span", { text: name })]);
+            if (state === "active") li.style.setProperty("--p", Math.max(12, Math.min(95, s.progress || 40)) + "%");
+            return li;
+        })
+    );
+
+    return el("li", { class: "row" }, [
+        el("div", {}, [
+            el("h3", { class: "row-title", text: s.title || "Resumo sem título" }),
+            s.description && el("p", { class: "row-desc", text: s.description }),
+            el("p", { class: "row-meta", text: "Criado em " + fmtDate(s.createdAt) })
+        ]),
+        el("div", {}, [el("p", { class: "state-line " + st.tone, text: st.label }), pipe]),
+        el("div", { class: "row-actions" }, [
+            s.status === "SUMMARIZED" && el("button", { class: "btn btn-dark", type: "button", text: "Abrir resumo", onclick: () => openDetail(s.externalId) }),
+            el("button", { class: "btn btn-danger", type: "button", text: "Excluir", "aria-label": "Excluir " + (s.title || "resumo sem título"), onclick: () => askDelete(s.externalId) })
+        ])
+    ]);
+}
+
+function renderStats(list) {
+    const run = list.filter(s => STATUS[s.status] && STATUS[s.status].tone === "run").length;
+    const ok = list.filter(s => s.status === "SUMMARIZED").length;
+    const fail = list.filter(s => STATUS[s.status] && STATUS[s.status].tone === "fail").length;
+    const chips = [];
+    if (list.length) chips.push(el("span", { class: "chip", text: list.length + (list.length === 1 ? " resumo" : " resumos") }));
+    if (ok) chips.push(el("span", { class: "chip ok", text: ok + (ok === 1 ? " concluído" : " concluídos") }));
+    if (run) chips.push(el("span", { class: "chip run", text: run + " em andamento" }));
+    if (fail) chips.push(el("span", { class: "chip fail", text: fail + (fail === 1 ? " com falha" : " com falhas") }));
+    $("stats").replaceChildren(...chips);
+}
+
+function renderList(summaries) {
+    const list = $("summary-list");
+    list.replaceChildren();
+    renderStats(summaries);
+    if (!summaries.length) {
+        list.appendChild(el("li", { class: "empty" }, [
+            el("h3", { text: "Nenhum resumo ainda" }),
+            el("p", { text: "Toque no botão de gravar ou envie um arquivo. Os resumos aparecem aqui, com o andamento de cada etapa." })
+        ]));
+        return;
+    }
+    summaries.forEach(s => list.appendChild(renderRow(s)));
+}
+
+async function loadSummaries() {
+    clearTimeout(pollTimer);
+    try {
+        const res = await fetch(`${baseUrl}/summaries`);
+        if (!res.ok) throw new Error(res.status);
+        const { data } = await res.json();
+        const summaries = data || [];
+        renderList(summaries);
+        if (summaries.some(s => !FINAL.includes(s.status))) pollTimer = setTimeout(loadSummaries, 1500);
+    } catch (e) {
+        $("stats").replaceChildren();
+        $("summary-list").replaceChildren(el("li", { class: "empty" }, [
+            el("h3", { text: "Não foi possível carregar os resumos" }),
+            el("p", { text: "Confira se a API está rodando em " + baseUrl + " e tente de novo." }),
+            el("button", { class: "btn btn-ghost", type: "button", text: "Tentar de novo", style: "margin-top:16px", onclick: loadSummaries })
+        ]));
+    }
+}
+
+/* ---------- detail ---------- */
+async function openDetail(id) {
+    try {
+        const res = await fetch(`${baseUrl}/summaries/${encodeURIComponent(id)}`);
+        if (!res.ok) throw new Error(res.status);
+        const s = await res.json();
+        const block = (title, body, cls) => el("section", {}, [el("h3", { text: title }), el("p", { class: cls || "", text: body })]);
+        $("detail-content").replaceChildren(
+            el("h2", { id: "detail-title", text: s.title || "Resumo sem título" }),
+            s.description && el("p", { class: "lead", text: s.description }),
+            s.briefResume && block("Em uma frase", s.briefResume, "tldr"),
+            s.mediumResume && block("Resumo", s.mediumResume),
+            s.fullText && block("Transcrição completa", s.fullText, "full")
+        );
+        $("detail").showModal();
+        document.querySelector(".drawer-body").scrollTop = 0;
+    } catch (e) {
+        toast("Não foi possível abrir o resumo. Tente novamente.", true);
+    }
+}
+$("close-detail").addEventListener("click", () => $("detail").close());
+$("detail").addEventListener("click", e => { if (e.target === $("detail")) $("detail").close(); });
+
+/* ---------- delete ---------- */
+let pendingDelete = null;
+function askDelete(id) { pendingDelete = id; $("confirm").showModal(); }
+$("confirm-cancel").addEventListener("click", () => $("confirm").close());
+$("confirm-ok").addEventListener("click", async () => {
+    const id = pendingDelete;
+    $("confirm").close();
+    try {
+        const res = await fetch(`${baseUrl}/summaries/${encodeURIComponent(id)}`, { method: "DELETE" });
+        if (res.status === 404) toast("Esse resumo já foi removido.", true);
+        else if (!res.ok) toast("Não foi possível excluir. Tente novamente.", true);
+        else toast("Resumo excluído.");
+    } catch (e) {
+        toast("Sem conexão com o servidor. Tente novamente.", true);
+    }
+    loadSummaries();
+});
+
+/* ---------- upload ---------- */
+async function sendAudio(blob, name) {
+    const fd = new FormData();
+    fd.append("file", blob, name);
+    try {
+        const res = await fetch(`${baseUrl}/upload`, { method: "POST", body: fd });
+        if (!res.ok) throw new Error(res.status);
+        toast("Áudio enviado. Acompanhe o andamento na lista.");
+        loadSummaries();
+    } catch (e) {
+        toast("Falha ao enviar o áudio. Tente novamente.", true);
+    }
+}
+
+$("pick-file").addEventListener("click", () => $("file-input").click());
+$("file-input").addEventListener("change", e => {
+    const f = e.target.files[0];
+    if (f) sendAudio(f, f.name);
+    e.target.value = "";
+});
+
+/* ---------- recorder + waveform ---------- */
+const canvas = $("wave");
+const g = canvas.getContext("2d");
+const BAR = 4, GAP = 4;
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let levels = [], analyser, audioCtx, mediaRecorder, chunks = [], timerId, secs = 0, stream, recording = false;
+
+function drawWave(t) {
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (canvas.width !== Math.round(w * dpr)) { canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); }
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, w, h);
+    const n = Math.floor((w + GAP) / (BAR + GAP));
+    const off = (w - (n * (BAR + GAP) - GAP)) / 2;
+    g.fillStyle = recording ? "#ef6b60" : "#f4b73d";
+    for (let i = 0; i < n; i++) {
+        let v;
+        if (recording) v = levels[levels.length - n + i] || 0;
+        else {
+            const edge = Math.sin((i / (n - 1)) * Math.PI);
+            const sway = reduceMotion ? 0 : Math.sin(i * .42 + t / 700) * .5 + Math.sin(i * .17 - t / 1100) * .5;
+            v = .06 + edge * (.16 + .1 * sway);
+        }
+        const bh = Math.max(4, v * h);
+        g.globalAlpha = recording ? 1 : .35 + .65 * Math.sin((i / (n - 1)) * Math.PI);
+        g.beginPath();
+        g.roundRect(off + i * (BAR + GAP), (h - bh) / 2, BAR, bh, 2);
+        g.fill();
+    }
+}
+
+function frame(t) {
+    if (recording && analyser) {
+        const data = new Uint8Array(analyser.fftSize);
+        analyser.getByteTimeDomainData(data);
+        let peak = 0;
+        for (const d of data) peak = Math.max(peak, Math.abs(d - 128) / 128);
+        levels.push(Math.min(1, .06 + peak * 2.4));
+        if (levels.length > 600) levels = levels.slice(-300);
+    }
+    drawWave(t);
+    requestAnimationFrame(frame);
+}
+
+function setRecordingUI(on) {
+    recording = on;
+    $("rig").classList.toggle("live", on);
+    $("pick-file").disabled = on;
+    $("rec-btn").setAttribute("aria-label", on ? "Parar e enviar gravação" : "Iniciar gravação");
+    $("rec-state-text").textContent = on ? "Gravando. Toque para parar e enviar." : "Pronto para gravar";
+}
+
+function releaseMic() {
+    clearInterval(timerId);
+    if (audioCtx) audioCtx.close();
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    levels = [];
+}
+
+async function startRecording() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        toast("Este navegador não permite gravar áudio.", true);
+        return;
+    }
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (e) {
+        toast("Sem acesso ao microfone. Libere a permissão no navegador e tente de novo.", true);
+        return;
+    }
+    audioCtx = new AudioContext();
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 512;
+    audioCtx.createMediaStreamSource(stream).connect(analyser);
+
+    mediaRecorder = new MediaRecorder(stream);
+    chunks = [];
+    mediaRecorder.ondataavailable = e => chunks.push(e.data);
+    mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: "audio/wav" });
+        $("audio-preview").src = URL.createObjectURL(blob);
+        $("preview").hidden = false;
+        releaseMic();
+        setRecordingUI(false);
+        sendAudio(blob, "gravacao.wav");
+    };
+
+    secs = 0;
+    $("timer").textContent = "00:00";
+    timerId = setInterval(() => {
+        secs++;
+        $("timer").textContent = String(Math.floor(secs / 60)).padStart(2, "0") + ":" + String(secs % 60).padStart(2, "0");
+    }, 1000);
+
+    mediaRecorder.start();
+    setRecordingUI(true);
+}
+
+$("rec-btn").addEventListener("click", () => {
+    if (recording) mediaRecorder.stop();
+    else startRecording();
+});
+
+requestAnimationFrame(frame);
+loadSummaries();
+</script>
+</body>
+</html>

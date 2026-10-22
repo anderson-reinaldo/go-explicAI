@@ -3,6 +3,8 @@ package configuration
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"os"
 
 	"github.com/anderson-reinaldo/go-explicAI/internal/application/service"
 	"github.com/anderson-reinaldo/go-explicAI/internal/infrastructure/api"
@@ -54,6 +56,17 @@ func (a *Application) registerControllers() {
 
 func initMiddlewares(server *echo.Echo, logger *zap.Logger) {
 	server.Use(middleware.Recover())
+
+	//Remover em produção
+
+	if os.Getenv("ENV") == "dev" {
+		server.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+			AllowOrigins: []string{"*"},
+			AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
+			AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
+		}))
+	}
+
 	server.Use(loggerMiddleware(logger))
 }
 
